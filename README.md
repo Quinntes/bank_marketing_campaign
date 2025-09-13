@@ -146,3 +146,9 @@ After tuning the hyperparameters, the model is evaluated on the test dataset, an
 2. **Optimize Telemarketing Timing**: Campaigns should be optimized for months like March, October, and September, which are more likely to yield higher conversion rates.
 3. **Improve Recall for Deposit Customers**: Consider further threshold adjustments or use techniques like oversampling to improve the detection of potential deposit customers.
 4. **Utilize Financial Features for Targeting**: Focus more on customers with stable financial situations, such as those with loans or homeownership, as they are more likely to invest in a deposit product.
+
+---
+
+## Future Work:
+
+Further work could explore additional feature engineering and experiment with different models or ensemble methods to improve accuracy.
