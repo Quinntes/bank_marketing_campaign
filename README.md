@@ -1,65 +1,77 @@
-````markdown
 <center>
     <h1 style="font-size: 36px; font-weight: bold;">Predicting Potential Deposit Customers Using Machine Learning to Optimize Telemarketing Campaigns</h1>
 </center>
 
-## Project Overview
-
-This project aims to predict potential deposit customers from a bank's telemarketing campaign dataset. By applying machine learning techniques, the goal is to optimize marketing efforts and improve campaign conversions. 
-
 ## Business Problem
 
-The marketing team has data from a fixed-term deposit telemarketing campaign. The challenge lies in determining which customers will actually subscribe to the deposit product after receiving the telemarketing offer. Predicting these customers accurately helps optimize telemarketing efforts, avoiding unnecessary costs and maximizing revenue.
+The marketing team has data regarding telemarketing campaigns for fixed-term deposit products. This data includes customers who subscribed to the deposit and those who did not after receiving a telemarketing offer.
 
 ### Problem:
 
-The marketing team lacks the ability to identify which customers are most likely to subscribe to the deposit, despite having available data on customer interactions with the bank (e.g., age, job status, account balance).
+The marketing team does not always know which customers will subscribe to the deposit, even though they have data on their interactions with the bank (e.g., age, job status, account balance, etc.).
 
 ### Metrics:
 
 #### False Positives (FP):
-The model predicts that a customer will subscribe to a deposit, but they do not.
 
+ML predicts that a customer will subscribe to a deposit, but in reality, they do not.
 **Consequences:**
-- Unnecessary telemarketing calls lead to increased costs.
+
+* If the model predicts a customer will subscribe to a deposit, the marketing team contacts that customer, leading to unnecessary telemarketing costs.
+* **Cost:** Each telemarketing call costs resources, such as labor and other resources. For instance, we assume the cost of telemarketing is Rp 50,000 per call.
 
 #### False Negatives (FN):
-The model predicts a customer will not subscribe to a deposit, but they do.
 
+ML predicts a customer will not subscribe to a deposit, but in reality, they do.
 **Consequences:**
-- Missing potential customers for deposit subscriptions leads to a loss in revenue.
+
+* If the model predicts that a customer will not subscribe, the marketing team does not contact them. This results in lost opportunities to increase the campaign's conversion rate.
+* **Cost:** Loss of potential revenue because customers who could potentially subscribe to a deposit are not contacted. We assume the opportunity cost of not contacting a potential customer is Rp 2,000,000 per customer who could have subscribed.
 
 ### Cost Comparison:
 
-The cost of contacting customers who are unlikely to subscribe (FP) is lower than the opportunity cost of losing a potential subscriber (FN). Therefore, minimizing FN is prioritized.
+The cost of doing telemarketing to a customer who is unlikely to subscribe (FP) is considered lower than the opportunity cost of losing a potential customer who would have subscribed (FN). Therefore, the cost of FN is higher than FP. This makes detecting customers who will subscribe to a deposit a top priority.
 
-### Metric Used:
-**Recall:** The primary metric is recall, as it helps detect as many potential deposit customers as possible, avoiding false negatives.
+### The Metric Used:
+
+**Recall:**
+
+* The primary focus is to detect as many potential deposit customers as possible. Avoiding false negatives is crucial for maximizing the conversion rate and revenue from the telemarketing campaign.
+* Although there will be some false positives (customers predicted to subscribe who do not), the telemarketing cost is more manageable and not as high as the lost opportunity from missed potential customers.
 
 ---
 
 ## Data Understanding & Preparation
 
-This section describes the dataset and how it is prepared for modeling.
+In this phase, the dataset is prepared for analysis. This involves understanding the data and cleaning it to ensure it is of good quality before being used for classification modeling.
 
 ### 1. Read Dataset
-The dataset, containing information on telemarketing campaigns, is loaded from a CSV file.
+
+The dataset is read from a CSV file and stored in a DataFrame. This dataset contains information about the telemarketing campaign for fixed-term deposits, with the goal of predicting whether a customer will subscribe to the deposit or not.
 
 ```python
 df = pd.read_csv('data_bank_marketing_campaign.csv')
-````
+```
 
-### 2. Data Overview
+### 2. Creating a Backup
 
-Initial data exploration to understand the dataset's structure.
+A backup of the dataset is made to ensure the original data remains intact, so that any changes or cleaning done to the data will not affect the original dataset.
+
+```python
+df_copy = df.copy()
+```
+
+### 3. Data Overview
+
+An overview of the dataset is presented, showing the structure of the data, column types, and general information.
 
 ```python
 df_copy.info()
 ```
 
-### 3. Feature Selection
+### 4. Selecting Relevant Columns for Analysis
 
-Relevant columns are selected for the analysis, including both categorical and numerical features.
+Columns that are relevant to the analysis and modeling process are selected. The target column, which indicates whether a customer subscribed to the deposit or not, is also chosen for prediction.
 
 ```python
 df_copy = df_copy[['job', 'housing', 'loan', 'contact', 'month', 'poutcome', 'age', 'balance', 'campaign', 'pdays', 'deposit']]
@@ -69,30 +81,53 @@ df_copy = df_copy[['job', 'housing', 'loan', 'contact', 'month', 'poutcome', 'ag
 
 ## Exploratory Data Analysis (EDA)
 
-EDA is used to understand the relationships and distributions within the data, and to inform model decisions.
+EDA is performed to explore the dataset, examine feature distributions, and identify potential patterns that can help improve the predictive model.
+
+### Target Variable Analysis
+
+The distribution of the target variable (`deposit`) is checked to ensure that the dataset is balanced and appropriate for classification.
+
+```python
+perc = (df_copy['deposit'].value_counts(normalize=True) * 100).round(2)
+```
 
 ---
 
 ## Feature Importance Analysis
 
-XGBoost provides feature importance, which indicates which features are most critical for predicting customer subscription behavior.
+After training the model using XGBoost and preprocessing features, we analyze the importance of each feature to understand which features have the most significant impact on the model's decision-making.
 
 ```python
 feature_names = random_search.best_estimator_.named_steps['Preprocessing'].get_feature_names_out()
 importances = random_search.best_estimator_.named_steps['model'].feature_importances_
+
+feat_imp = pd.DataFrame({
+    'Feature': feature_names,
+    'Importance': importances
+}).sort_values('Importance', ascending=False)
 ```
 
 ---
 
 ## Model Evaluation & Tuning
 
-### 1. Model Comparison
+### 1. Model Definition
 
-Multiple models (Random Forest, XGBoost, Gradient Boosting, Logistic Regression) are tested. XGBoost performs best in terms of recall, which is essential for identifying potential deposit customers.
+* **RandomForest** and **XGBoost** are chosen for their strength in handling non-linear data and interactions between variables automatically.
+* **Gradient Boosting** is used for its effective performance in classification tasks.
+* **Logistic Regression** is used as a baseline model for comparison with more complex models.
 
 ### 2. Hyperparameter Tuning
 
-Hyperparameter tuning is done with RandomizedSearchCV to find optimal settings for XGBoost.
+Hyperparameter tuning is conducted to find the optimal parameter combination for the **XGBoost** model using **RandomizedSearchCV**.
+
+```python
+random_search.fit(X_train, y_train)
+```
+
+### 3. Final Model Evaluation
+
+After tuning the hyperparameters, the model is evaluated on the test dataset, and performance metrics (such as recall, ROC-AUC, and F2-Score) are computed.
 
 ---
 
@@ -100,22 +135,14 @@ Hyperparameter tuning is done with RandomizedSearchCV to find optimal settings f
 
 ### Conclusion:
 
-* **Feature Importance:** `poutcome_success` and financial stability indicators are key in predicting deposit customers.
-* **Recall Prioritization:** Focus on minimizing false negatives is crucial to avoid missing out on potential revenue.
+1. **Feature Importance**: Features like `poutcome_success` play a significant role in predicting potential deposit customers, so marketing should prioritize customers who were involved in previous successful campaigns.
+2. **Model Performance**: The **XGBoost** model achieved the highest recall (0.6349), but still struggled with detecting customers likely to deposit. Further improvements in recall are necessary.
+3. **Threshold Tuning**: By adjusting the threshold to 0.2, recall improved to 0.91, offering a good balance between detecting deposit customers and managing false positives.
+4. **Testing**: The model performed well on test data, but some false negatives remain, indicating the need for further improvements.
 
 ### Recommendations:
 
-1. Focus on customers who participated in successful past campaigns.
-2. Optimize telemarketing campaigns during high-conversion months like March and October.
-3. Further tune the model to improve recall for deposit customers.
-
----
-
-### Future Work:
-
-Further work could explore additional feature engineering and experiment with different models or ensemble methods to improve accuracy.
-
-```
-
-This version provides a more structured and complete README that is not only easy to follow but also gives actionable next steps and explanations of the process. Let me know if you'd like any more adjustments!
-```
+1. **Focus on Customers with Previous Campaign Success**: Prioritize customers who participated in past successful campaigns, as they are more likely to subscribe.
+2. **Optimize Telemarketing Timing**: Campaigns should be optimized for months like March, October, and September, which are more likely to yield higher conversion rates.
+3. **Improve Recall for Deposit Customers**: Consider further threshold adjustments or use techniques like oversampling to improve the detection of potential deposit customers.
+4. **Utilize Financial Features for Targeting**: Focus more on customers with stable financial situations, such as those with loans or homeownership, as they are more likely to invest in a deposit product.
